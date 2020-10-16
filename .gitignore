@@ -1,3 +1,4 @@
 *.out
 *.o
 *.n64
+unproc_assets/

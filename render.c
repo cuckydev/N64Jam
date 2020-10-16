@@ -146,6 +146,39 @@ void SetRenderState(RenderState next_render_state)
 	}
 }
 
+void LoadTex_CI4(u32 width, u32 height, u8 *tex, u16 *tlut)
+{
+	gDPSetTextureLUT(glistp++, G_TT_RGBA16);
+	gDPLoadTLUT_pal256(glistp++, tlut);
+	gDPLoadTextureBlock_4b(glistp++, 
+		tex,
+		G_IM_FMT_CI,
+		width, height,
+		0,
+		G_TX_WRAP, G_TX_WRAP,
+		G_TX_NOMASK, G_TX_NOMASK,
+		G_TX_NOLOD, G_TX_NOLOD
+	);
+}
+
+void RenderTex(const Rect *src, const Rect *dst)
+{
+	u32 src_w = src->right - src->left;
+	u32 src_h = src->bottom - src->top;
+	
+	u32 dst_w = dst->right - dst->left;
+	u32 dst_h = dst->bottom - dst->top;
+	
+	SetRenderState(RS_Tex);
+	gSPScisTextureRectangle(glistp++, 
+		dst->left << 2, dst->top << 2, 
+		dst->right << 2, dst->bottom <<2,
+		G_TX_RENDERTILE, 
+		src->left << 5, src->top << 5, 
+		(src_w << 10) / dst_w, (src_h << 10) / dst_h
+	);
+}
+
 void RenderRect(const Rect *rect, u32 col)
 {
 	//Clip rect against top left

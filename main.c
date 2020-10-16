@@ -11,15 +11,15 @@ Authors: Regan "cuckydev" Green
 
 #include "mem.h"
 #include "render.h"
+#include "game.h"
 
 void VBlankCallback(int pending)
 {
-	Rect test = {0, 0, 80, 80};
+	UpdateGame();
 	if (pending < 1)
 	{
 		StartRenderFrame();
-		RenderRect(&grect_full, RGB(0x80, 0x00, 0x00));
-		RenderRect(&test, RGB(0x00, 0x80, 0x80));
+		RenderGame();
 		EndRenderFrame();
 	}
 }
@@ -33,6 +33,9 @@ void mainproc(void)
 	
 	//Initialize sub-systems
 	InitRender((NUGfxFunc)VBlankCallback);
+	
+	//Initialize game
+	StartGame();
 	
 	//Start game
 	StartRender();

@@ -17,6 +17,6 @@ beginseg
 endseg
 
 beginwave
-	name    "cave"
+	name    "jam"
 	include "code"
 endwave

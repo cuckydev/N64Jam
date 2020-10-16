@@ -24,7 +24,9 @@ TARGETS = jam.n64
 CODEFILES = \
 	main.c \
 	mem.c \
-	render.c
+	render.c \
+	game.c \
+	gm_game.c
 
 # Output objects
 CODEOBJECTS = $(CODEFILES:.c=.o)  $(NUSYSLIBDIR)/nusys.o
