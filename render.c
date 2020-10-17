@@ -14,6 +14,8 @@ Authors: Regan "cuckydev" Green
 
 //Current render state
 static RenderState render_state;
+static u8 *render_tex;
+static u16 *render_tlut;
 
 //Render constants
 const Rect grect_full = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
@@ -94,13 +96,6 @@ void StartRenderFrame()
 	gSPSegment(glistp++, 0, 0);
 	gSPDisplayList(glistp++, OS_K0_TO_PHYSICAL(dl_init_rsp));
 	gSPDisplayList(glistp++, OS_K0_TO_PHYSICAL(dl_init_rdp));
-	
-	//Initialize frame
-	gDPSetCycleType(glistp++, G_CYC_FILL);
-	gDPSetDepthImage(glistp++, nuGfxZBuffer);
-	gDPSetColorImage(glistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH, nuGfxZBuffer);
-	gDPSetFillColor(glistp++, (GPACK_ZDZ(G_MAXFBZ, 0) << 16 | GPACK_ZDZ(G_MAXFBZ, 0)));
-	gDPFillRectangle(glistp++, 0, 0, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1);
 	gDPPipeSync(glistp++);
 	
 	//Reset draw state
@@ -131,15 +126,14 @@ void SetRenderState(RenderState next_render_state)
 			gDPSetColorImage(glistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH, osVirtualToPhysical(nuGfxCfb_ptr));
 			break;
 		case RS_Tex:
+			render_tex = NULL;
+			render_tlut = NULL;
+			
 			gDPSetCycleType(glistp++, G_CYC_1CYCLE);
 			gDPSetColorImage(glistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH, osVirtualToPhysical(nuGfxCfb_ptr));
 			
 			gDPSetCombineMode(glistp++, G_CC_DECALRGBA, G_CC_DECALRGBA);
-			gDPSetRenderMode(glistp++, G_RM_AA_ZB_TEX_EDGE, G_RM_AA_ZB_TEX_EDGE);
-			
-			gDPSetDepthSource(glistp++, G_ZS_PRIM);
-			gDPSetPrimDepth(glistp++, 0, 0);
-			gDPSetTexturePersp(glistp++, G_TP_NONE);
+			gDPSetRenderMode(glistp++, G_RM_AA_TEX_EDGE, G_RM_AA_TEX_EDGE);
 			break;
 		default:
 			break;
@@ -148,26 +142,35 @@ void SetRenderState(RenderState next_render_state)
 
 void LoadTex_CI4(u32 width, u32 height, u8 *tex, u16 *tlut)
 {
-	gDPSetTextureLUT(glistp++, G_TT_RGBA16);
-	gDPLoadTLUT_pal256(glistp++, tlut);
-	gDPLoadTextureBlock_4b(glistp++, 
-		tex,
-		G_IM_FMT_CI,
-		width, height,
-		0,
-		G_TX_WRAP, G_TX_WRAP,
-		G_TX_NOMASK, G_TX_NOMASK,
-		G_TX_NOLOD, G_TX_NOLOD
-	);
+	if (tlut != render_tlut)
+	{
+		gDPSetTextureLUT(glistp++, G_TT_RGBA16);
+		gDPLoadTLUT_pal256(glistp++, tlut);
+	}
+	if (tex != render_tex)
+	{
+		gDPLoadTextureBlock_4b(glistp++, 
+			tex,
+			G_IM_FMT_CI,
+			width, height,
+			0,
+			G_TX_WRAP, G_TX_WRAP,
+			G_TX_NOMASK, G_TX_NOMASK,
+			G_TX_NOLOD, G_TX_NOLOD
+		);
+	}
 }
 
 void RenderTex(const Rect *src, const Rect *dst)
 {
-	u32 src_w = src->right - src->left;
-	u32 src_h = src->bottom - src->top;
+	s32 src_w = src->right - src->left;
+	s32 src_h = src->bottom - src->top;
 	
-	u32 dst_w = dst->right - dst->left;
-	u32 dst_h = dst->bottom - dst->top;
+	s32 dst_w = dst->right - dst->left;
+	s32 dst_h = dst->bottom - dst->top;
+	
+	if (src_w == 0 || src_h == 0 || dst_w == 0 || dst_h == 0)
+		return;
 	
 	SetRenderState(RS_Tex);
 	gSPScisTextureRectangle(glistp++, 

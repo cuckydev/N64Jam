@@ -17,7 +17,7 @@ typedef struct
 	size_t size;
 } Mem_Header;
 
-Mem_Header *mem = NULL;
+static Mem_Header *mem = NULL;
 
 u8 Mem_Init(void *ptr, size_t size)
 {

@@ -11,8 +11,8 @@ typedef enum
 	GM_Num
 } Gamemode;
 
-typedef Gamemode (*GMFunc_Update)(void*);
-typedef void (*GMFunc_Render)(void*);
+typedef Gamemode (*Gamemode_Update)(void*);
+typedef void (*Gamemode_Render)(void*);
 
 //Game interface
 void StartGame();

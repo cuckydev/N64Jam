@@ -9,8 +9,8 @@
 typedef struct
 {
 	size_t work_size;
-	GMFunc_Update update;
-	GMFunc_Render render;
+	Gamemode_Update update;
+	Gamemode_Render render;
 } GamemodeDef;
 
 static const GamemodeDef gamemode_def[GM_Num] = {
@@ -27,10 +27,10 @@ static const GamemodeDef gamemode_def[GM_Num] = {
 };
 
 //Internal gamemode interface
-Gamemode gamemode;
-void *gamemode_work;
-GMFunc_Update gamemode_update;
-GMFunc_Render gamemode_render;
+static Gamemode gamemode;
+static void *gamemode_work;
+static Gamemode_Update gamemode_update;
+static Gamemode_Render gamemode_render;
 
 void SetGamemode(Gamemode next_gamemode)
 {
