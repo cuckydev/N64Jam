@@ -111,7 +111,7 @@ void EndRenderFrame()
 	nuGfxTaskStart(glist, (s32)(glistp - glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX2, NU_SC_SWAPBUFFER);
 }
 
-void SetRenderState(RenderState next_render_state)
+static void SetRenderState(RenderState next_render_state)
 {
 	//Change render state
 	if (next_render_state == render_state)

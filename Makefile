@@ -14,7 +14,7 @@ LCINCS =  -I. -I$(NUSYSINCDIR) -I$(ROOT)/usr/include/PR
 LCOPTS =  -G 0
 LDIRT =   $(APP)
 LDFLAGS = $(MKDEPOPT) -L$(LIB) -L$(NUSYSLIBDIR) -s -lnusys -lultra -L$(N64_LIBGCCDIR) -lgcc -L$(N64_NEWLIBDIR) -lc
-OPTIMIZER = -O3
+OPTIMIZER = -Og
 
 # Target directory
 APP =     jam.out

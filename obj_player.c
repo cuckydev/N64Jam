@@ -82,14 +82,17 @@ BOOL ObjPlayer_Update(void *vwk, ObjectState *state)
 	}
 	
 	//Increment animation tick
-	state->x += state->xsp;
-	wk->walk_tick += abs(state->xsp) * 0x600;
+	if (!(input_down & INPUT_A))
+	{
+		state->x += state->xsp;
+		wk->walk_tick += abs(state->xsp) * 0x600;
+	}
 	
 	return FALSE;
 }
 
 //Object draw
-static inline void Player_DrawPart(s32 bx, s32 by, f32 sx, f32 sy, BOOL x_flip, BOOL y_flip, f32 x, f32 y, u8 px, u8 py)
+static void Player_DrawPart(s32 bx, s32 by, f32 sx, f32 sy, BOOL x_flip, BOOL y_flip, f32 x, f32 y, u8 px, u8 py)
 {
 	//Get render state
 	f32 fx = x_flip ? -1.0f : 1.0f;
@@ -125,10 +128,12 @@ void ObjPlayer_Render(void *vwk, ObjectState *state)
 	//Get animation state
 	u8 walk_ang = wk->walk_tick >> 8;
 	
-	f32 bob = lerp(1, (-0.5f + coss(walk_ang << 1)) * 0.1f, wk->walk_per);
+	f32 bob = (-0.5f + lerp(1, coss(walk_ang << 1), wk->walk_per)) * 0.1f * state->sy;
 	
 	f32 hand_sin = lerp(0.0f, sins(walk_ang), wk->walk_per);
 	f32 hand_cos = lerp(1.0f, coss(walk_ang << 1), wk->walk_per);
+	f32 foot_sin = lerp(0.0f, sins(walk_ang), wk->walk_per);
+	f32 foot_cos = lerp(1.0f, coss(walk_ang << 1), wk->walk_per);
 	
 	f32 larm_x = -0.2f;
 	f32 larm_y = 0.4f;
@@ -139,6 +144,12 @@ void ObjPlayer_Render(void *vwk, ObjectState *state)
 	f32 rarm_y = 0.4f;
 	f32 rhand_x = rarm_x + (hand_sin * -0.4f);
 	f32 rhand_y = (rarm_y + 0.25f) + (hand_cos * 0.0825f);
+	
+	f32 lfoot_x = -0.3 + (foot_sin * -0.25f);
+	f32 lfoot_y = min(0.9 + (foot_cos * 0.3f), 0.8);
+	
+	f32 rfoot_x = 0.1 + (foot_sin * 0.25f);
+	f32 rfoot_y = min(0.9 + (foot_cos * 0.3f), 0.8);
 	
 	u8 lhand_frame = 0;
 	if (hand_sin < -0.5f)
@@ -151,6 +162,20 @@ void ObjPlayer_Render(void *vwk, ObjectState *state)
 		rhand_frame = 1;
 	if (hand_sin > 0.5f)
 		rhand_frame = 2;
+	
+	u8 lfoot_frame = 0;
+	if (foot_sin < -0.5f)
+		lfoot_frame = 1;
+	if (foot_sin > 0.5f)
+		lfoot_frame = 2;
+	
+	u8 rfoot_frame = 0;
+	if (foot_sin < -0.5f)
+		rfoot_frame = 2;
+	if (foot_sin > 0.5f)
+		rfoot_frame = 1;
+	
+	f32 foot_x, foot_y, foot_frame;
 	
 	//Get body rects
 	s32 x = (s32)state->x;
@@ -165,12 +190,20 @@ void ObjPlayer_Render(void *vwk, ObjectState *state)
 	Player_DrawPart(x, y, state->sx, state->sy, state->x_flip, state->y_flip, rarm_x, rarm_y, 0, 0);
 	Player_DrawPart(x, y, state->sx, state->sy, state->x_flip, state->y_flip, lerp(rarm_x, rhand_x, 0.35f), lerp(rarm_y, rhand_y, 0.35f), 0, 0);
 	Player_DrawPart(x, y, state->sx, state->sy, state->x_flip, state->y_flip, rhand_x, rhand_y, 1, rhand_frame);
+	foot_x = (foot_sin < 0) ? rfoot_x : lfoot_x;
+	foot_y = (foot_sin < 0) ? rfoot_y : lfoot_y;
+	foot_frame = (foot_sin < 0) ? rfoot_frame : lfoot_frame;
+	Player_DrawPart(x, y, state->sx, state->sy, state->x_flip, state->y_flip, foot_x, foot_y, 3, foot_frame);
 	
 	//Render body
 	LoadTex_CI4(32, 32, player_body_00_tex, player_tlut);
 	RenderTex(&body_src, &body_dst);
 	
 	//Render foreground limbs
+	foot_x = (foot_sin >= 0) ? rfoot_x : lfoot_x;
+	foot_y = (foot_sin >= 0) ? rfoot_y : lfoot_y;
+	foot_frame = (foot_sin >= 0) ? rfoot_frame : lfoot_frame;
+	Player_DrawPart(x, y, state->sx, state->sy, state->x_flip, state->y_flip, foot_x, foot_y, 3, foot_frame);
 	Player_DrawPart(x, y, state->sx, state->sy, state->x_flip, state->y_flip, larm_x, larm_y, 0, 0);
 	Player_DrawPart(x, y, state->sx, state->sy, state->x_flip, state->y_flip, lerp(larm_x, lhand_x, 0.35f), lerp(larm_y, lhand_y, 0.35f), 0, 0);
 	Player_DrawPart(x, y, state->sx, state->sy, state->x_flip, state->y_flip, lhand_x, lhand_y, 1, lhand_frame);
