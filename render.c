@@ -134,6 +134,11 @@ static void SetRenderState(RenderState next_render_state)
 			
 			gDPSetCombineMode(glistp++, G_CC_DECALRGBA, G_CC_DECALRGBA);
 			gDPSetRenderMode(glistp++, G_RM_AA_TEX_EDGE, G_RM_AA_TEX_EDGE);
+			
+			gDPSetDepthSource(glistp++, G_ZS_PIXEL);
+			gDPSetPrimDepth(glistp++, 0, 0);
+			gDPSetTexturePersp(glistp++, G_TP_NONE);
+			gDPPipeSync(glistp++);
 			break;
 		default:
 			break;
@@ -175,10 +180,28 @@ void RenderTex(const Rect *src, const Rect *dst)
 	SetRenderState(RS_Tex);
 	gSPScisTextureRectangle(glistp++, 
 		dst->left << 2, dst->top << 2, 
-		dst->right << 2, dst->bottom <<2,
+		dst->right << 2, dst->bottom << 2,
 		G_TX_RENDERTILE, 
 		src->left << 5, src->top << 5, 
-		(src_w << 10) / dst_w, (src_h << 10) / dst_h
+		(src_w << 10) / dst_w, (src_h  << 10) / dst_h
+	);
+}
+
+void RenderTex_Quick(const Rect *src, s32 x, s32 y)
+{
+	s32 src_w = src->right - src->left;
+	s32 src_h = src->bottom - src->top;
+	
+	if (src_w == 0 || src_h == 0)
+		return;
+	
+	SetRenderState(RS_Tex);
+	gSPScisTextureRectangle(glistp++, 
+		x << 2, y << 2, 
+		(x + src_w) << 2, (y + src_h) << 2,
+		G_TX_RENDERTILE, 
+		src->left << 5, src->top << 5, 
+		1 << 10, 1 << 10
 	);
 }
 

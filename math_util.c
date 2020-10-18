@@ -32,3 +32,22 @@ void InitMathUtil()
 {
 	
 }
+
+//RNG
+static u32 holdrand;
+
+void srand(u32 seed)
+{
+	holdrand = seed;
+}
+
+s32 rand()
+{
+	return (((holdrand = holdrand * 214013L + 2531011L) >> 16) & 0x7FFF);
+}
+
+f32 frand()
+{
+	return (f32)rand() / (f32)RAND_MAX;
+}
+

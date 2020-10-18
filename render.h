@@ -29,6 +29,7 @@ void StartRenderFrame();
 void EndRenderFrame();
 void LoadTex_CI4(u32 width, u32 height, u8 *tex, u16 *tlut);
 void RenderTex(const Rect *src, const Rect *dst);
+void RenderTex_Quick(const Rect *src, s32 x, s32 y);
 void RenderRect(const Rect *rect, u32 col);
 
 #endif

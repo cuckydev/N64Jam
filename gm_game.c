@@ -24,11 +24,6 @@ Gamemode GM_Game_Update(void *vwk)
 		case GM_Game_State_Loop:
 			//Update game state
 			ObjectManager_Update(&wk->objman);
-			
-			//Test
-			wk->r++;
-			wk->g += 2;
-			wk->b += 3;
 			break;
 	}
 	
@@ -47,7 +42,9 @@ void GM_Game_Render(void *vwk)
 	GM_Game_Work *wk = (GM_Game_Work*)vwk;
 	
 	//Render game
-	RenderRect(&grect_full, RGB(wk->r, wk->g, wk->b));
+	RenderRect(&grect_full, RGB(0x00, 0x80, 0x80));
+	Rect rect_floor = {0, 136, SCREEN_WIDTH, SCREEN_HEIGHT};
+	RenderRect(&rect_floor, RGB(0x00, 0x00, 0x00));
 	
 	ObjectManager_Draw(&wk->objman);
 }

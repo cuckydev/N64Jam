@@ -8,15 +8,17 @@
 //Player physics parameters
 typedef struct
 {
-	float ground_accel;
-	float ground_decel;
-	float ground_drag;
+	f32 ground_accel;
+	f32 ground_decel;
+	f32 ground_drag;
+	f32 run_speed;
 } PlayerParam;
 
 static const PlayerParam standard_param = {
-	0.2,
-	0.005,
-	0.9,
+	0.2f,
+	0.005f,
+	0.9f,
+	1.25f,
 };
 
 //Object update
@@ -44,30 +46,41 @@ BOOL ObjPlayer_Update(void *vwk, ObjectState *state)
 	if (input_down & INPUT_DOWN)
 		state->sx -= 0.025f;
 	state->sy = state->sx;
+	state->y = 136.0f - 16.0f * state->sy;
 	
 	//Run player state
 	switch (wk->state)
 	{
 		case ObjPlayerState_Init:
+		{
 			//Initialize player state
 			wk->state = ObjPlayerState_Idle;
 			
 			//Animation state
 			wk->walk_tick = 0x0000;
 			wk->walk_per = 0.0f;
+		}
 	//Fallthrough
 		case ObjPlayerState_Idle:
+		{
 			//Decrease animation weight
 			wk->walk_per *= 0.9f;
+			if (wk->walk_per < 0.01f)
+				wk->walk_tick = 0x0000;
 			
 			//Decelerate
 			state->xsp *= standard_param.ground_drag;
 			state->xsp = max(abs(state->xsp) - standard_param.ground_decel, 0) * sign(state->xsp);
 			break;
+		}
 		case ObjPlayerState_Walk:
+		{
 			//Increase animation weight
-			if (wk->walk_per < 1.0f)
-				wk->walk_per = min(wk->walk_per + 0.05f, 1.0f);
+			f32 tgt_per = min(abs(state->xsp) / standard_param.run_speed, 1.0f);
+			if (wk->walk_per < tgt_per)
+				wk->walk_per = min(wk->walk_per + 0.125f, tgt_per);
+			else if (wk->walk_per > tgt_per)
+				wk->walk_per = max(wk->walk_per - 0.1f, tgt_per);
 			
 			//Movement
 			if (input_down & INPUT_LEFT)
@@ -79,13 +92,14 @@ BOOL ObjPlayer_Update(void *vwk, ObjectState *state)
 			state->xsp *= standard_param.ground_drag;
 			state->xsp += standard_param.ground_accel * (state->x_flip ? -1.0f : 1.0f);
 			break;
+		}
 	}
 	
 	//Increment animation tick
 	if (!(input_down & INPUT_A))
 	{
 		state->x += state->xsp;
-		wk->walk_tick += abs(state->xsp) * 0x600;
+		wk->walk_tick += (abs(state->xsp) / standard_param.run_speed) * 0x800;
 	}
 	
 	return FALSE;
@@ -131,7 +145,7 @@ void ObjPlayer_Render(void *vwk, ObjectState *state)
 	f32 bob = (-0.5f + lerp(1, coss(walk_ang << 1), wk->walk_per)) * 0.1f * state->sy;
 	
 	f32 hand_sin = lerp(0.0f, sins(walk_ang), wk->walk_per);
-	f32 hand_cos = lerp(1.0f, coss(walk_ang << 1), wk->walk_per);
+	f32 hand_cos = lerp(1.0f, -1.0f - coss(walk_ang), wk->walk_per);
 	f32 foot_sin = lerp(0.0f, sins(walk_ang), wk->walk_per);
 	f32 foot_cos = lerp(1.0f, coss(walk_ang << 1), wk->walk_per);
 	
@@ -143,7 +157,7 @@ void ObjPlayer_Render(void *vwk, ObjectState *state)
 	f32 rarm_x = 0.0f;
 	f32 rarm_y = 0.4f;
 	f32 rhand_x = rarm_x + (hand_sin * -0.4f);
-	f32 rhand_y = (rarm_y + 0.25f) + (hand_cos * 0.0825f);
+	f32 rhand_y = (rarm_y + 0.25f) + (lerp(hand_cos, -1.0f - hand_cos, wk->walk_per) * 0.0825f);
 	
 	f32 lfoot_x = -0.3 + (foot_sin * -0.25f);
 	f32 lfoot_y = min(0.9 + (foot_cos * 0.3f), 0.8);
@@ -151,13 +165,13 @@ void ObjPlayer_Render(void *vwk, ObjectState *state)
 	f32 rfoot_x = 0.1 + (foot_sin * 0.25f);
 	f32 rfoot_y = min(0.9 + (foot_cos * 0.3f), 0.8);
 	
-	u8 lhand_frame = 0;
+	u8 lhand_frame = (hand_cos < -0.75f) ? 3 : 0;
 	if (hand_sin < -0.5f)
 		lhand_frame = 2;
 	if (hand_sin > 0.5f)
 		lhand_frame = 1;
 	
-	u8 rhand_frame = 0;
+	u8 rhand_frame = (hand_cos > -0.75f) ? 3 : 0;
 	if (hand_sin < -0.5f)
 		rhand_frame = 1;
 	if (hand_sin > 0.5f)

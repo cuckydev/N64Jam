@@ -13,8 +13,8 @@ LCDEFS =  -DF3DEX_GBI_2
 LCINCS =  -I. -I$(NUSYSINCDIR) -I$(ROOT)/usr/include/PR
 LCOPTS =  -G 0
 LDIRT =   $(APP)
-LDFLAGS = $(MKDEPOPT) -L$(LIB) -L$(NUSYSLIBDIR) -s -lnusys -lultra -L$(N64_LIBGCCDIR) -lgcc -L$(N64_NEWLIBDIR) -lc
-OPTIMIZER = -Og
+LDFLAGS = $(MKDEPOPT) -L$(LIB) -L$(NUSYSLIBDIR) -s -lnusys -lultra -L$(N64_LIBGCCDIR) -lgcc -lnustd
+OPTIMIZER = -O2
 
 # Target directory
 APP =     jam.out
@@ -25,8 +25,8 @@ CODEFILES = \
 	main.c \
 	mem.c \
 	math_util.c \
-	input.c \
 	render.c \
+	input.c \
 	game.c \
 	object.c \
 	obj_player.c \
