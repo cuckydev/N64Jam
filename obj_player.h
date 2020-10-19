@@ -8,6 +8,7 @@ typedef enum
 	ObjPlayerState_Init,
 	ObjPlayerState_Idle,
 	ObjPlayerState_Walk,
+	ObjPlayerState_Jump,
 } ObjPlayer_State;
 
 typedef struct
@@ -17,6 +18,7 @@ typedef struct
 	
 	//Animation state
 	u16 walk_tick;
+	u16 walk_iner;
 	f32 walk_per;
 	
 	//Collision state

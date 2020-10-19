@@ -12,6 +12,9 @@ typedef struct
 	f32 ground_decel;
 	f32 ground_drag;
 	
+	f32 air_accel;
+	f32 air_drag;
+	
 	f32 jump_speed;
 	f32 run_speed;
 	
@@ -25,6 +28,9 @@ static const PlayerParam standard_param = {
 	/* ground_decel */ 0.005f,
 	/* ground_drag */ 0.9f,
 	
+	/* air_accel */ 0.075f,
+	/* air_drag */ 0.97f,
+	
 	/* jump_speed */ 4.75f,
 	/* run_speed */ 1.25f,
 	
@@ -32,6 +38,21 @@ static const PlayerParam standard_param = {
 	/* hold_gravity */ 0.1f,
 	/* gravity_drag */ 0.975f,
 };
+
+//Player movement functions
+BOOL ObjPlayer_CheckJump(ObjPlayer_Work *wk, ObjectState *state, const PlayerParam *param)
+{
+	//Jump if A is pressed
+	if (input_press & INPUT_A)
+	{
+		state->ysp = -param->jump_speed;
+		wk->state = ObjPlayerState_Jump;
+		wk->walk_iner = max(wk->walk_iner, 0x400);
+		wk->collide &= ~OBJ_COLLIDE_FLOOR;
+		return TRUE;
+	}
+	return FALSE;
+}
 
 //Object update
 BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman, Map *map)
@@ -47,12 +68,39 @@ BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman, Map *map)
 	switch (wk->state)
 	{
 		case ObjPlayerState_Idle:
-			if (input_down & (INPUT_LEFT | INPUT_RIGHT))
-				wk->state = ObjPlayerState_Walk;
+			if (!(wk->collide & OBJ_COLLIDE_FLOOR))
+			{
+				//Walked off a ledge
+				wk->state = ObjPlayerState_Jump;
+			}
+			else if (!ObjPlayer_CheckJump(wk, state, param))
+			{
+				//Didn't jump, switch to walk state if left or right is held
+				if (input_down & (INPUT_LEFT | INPUT_RIGHT))
+					wk->state = ObjPlayerState_Walk;
+			}
 			break;
 		case ObjPlayerState_Walk:
-			if (!(input_down & (INPUT_LEFT | INPUT_RIGHT)))
-				wk->state = ObjPlayerState_Idle;
+			if (!(wk->collide & OBJ_COLLIDE_FLOOR))
+			{
+				//Walked off a ledge
+				wk->state = ObjPlayerState_Jump;
+			}
+			else if (!ObjPlayer_CheckJump(wk, state, param))
+			{
+				//Didn't jump, switch to idle state if neither left or right is held
+				if (!(input_down & (INPUT_LEFT | INPUT_RIGHT)))
+					wk->state = ObjPlayerState_Idle;
+			}
+			break;
+		case ObjPlayerState_Jump:
+			if (wk->collide & OBJ_COLLIDE_FLOOR)
+			{
+				if (input_down & (INPUT_LEFT | INPUT_RIGHT))
+					wk->state = ObjPlayerState_Walk;
+				else
+					wk->state = ObjPlayerState_Idle;
+			}
 			break;
 	}
 	
@@ -73,6 +121,7 @@ BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman, Map *map)
 			
 			//Animation state
 			wk->walk_tick = 0x0000;
+			wk->walk_iner = 0x0000;
 			wk->walk_per = 0.0f;
 			
 			//Collision state
@@ -103,7 +152,7 @@ BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman, Map *map)
 			//Movement
 			if (input_down & INPUT_LEFT)
 				state->x_flip = TRUE;
-			else if (input_down & INPUT_RIGHT)
+			if (input_down & INPUT_RIGHT)
 				state->x_flip = FALSE;
 			
 			//Accelerate
@@ -111,23 +160,27 @@ BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman, Map *map)
 			state->xsp += param->ground_accel * (state->x_flip ? -1.0f : 1.0f);
 			break;
 		}
-	}
-	
-	//Gravity and jumping
-	if (wk->collide & OBJ_COLLIDE_FLOOR)
-	{
-		//Jump if A is pressed
-		if (input_press & INPUT_A)
-			state->ysp = -param->jump_speed;
-	}
-	else
-	{
-		//Enforce gravity
-		state->ysp *= param->gravity_drag;
-		if ((input_down & INPUT_A) && state->ysp < 0.0f)
-			state->ysp += param->hold_gravity;
-		else
-			state->ysp += param->gravity;
+		case ObjPlayerState_Jump:
+		{
+			//Increase animation weight
+			if (wk->walk_per < 1.0f)
+				wk->walk_per = min(wk->walk_per + 0.075f, 1.0f);
+			
+			//Movement
+			state->xsp *= param->air_drag;
+			if (input_down & INPUT_LEFT)
+				state->xsp -= param->air_accel;
+			if (input_down & INPUT_RIGHT)
+				state->xsp += param->air_accel;
+			
+			//Gravity
+			state->ysp *= param->gravity_drag;
+			if ((input_down & INPUT_A) && state->ysp < 0.0f)
+				state->ysp += param->hold_gravity;
+			else
+				state->ysp += param->gravity;
+			break;
+		}
 	}
 	
 	//Move
@@ -135,10 +188,23 @@ BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman, Map *map)
 	state->y += state->ysp;
 	
 	//Animation
-	wk->walk_tick += (abs(state->xsp) / param->run_speed) * 0x800;
+	switch (wk->state)
+	{
+		case ObjPlayerState_Idle:
+		case ObjPlayerState_Walk:
+			wk->walk_iner = (abs(state->xsp) / param->run_speed) * 0x800;
+			wk->walk_tick += wk->walk_iner;
+			break;
+		case ObjPlayerState_Jump:
+			if ((wk->walk_tick >= 0x2000 && wk->walk_tick <= 0x6000) ||
+				(wk->walk_tick >= 0xA000 && wk->walk_tick <= 0xE000))
+				wk->walk_iner *= 0.6f;
+			wk->walk_tick += wk->walk_iner;
+			break;
+	}
 	
 	//Collision detection
-	wk->collide = ObjectManager_CollideMap(obj, 8.0f * state->sx, 16.0f * state->sy, map);
+	wk->collide = ObjectManager_CollideMap(obj, 8.0f * state->sx, (((wk->collide & OBJ_COLLIDE_FLOOR) || state->ysp >= 0.0f) ? 16.0f : 14.0f) * state->sy, map);
 	
 	//Stop speeds if hit collision
 	if ((wk->collide & OBJ_COLLIDE_LEFT) && state->xsp < 0.0f)

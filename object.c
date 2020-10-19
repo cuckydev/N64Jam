@@ -108,7 +108,7 @@ ObjCollideField ObjectManager_CollideMap(Object *obj, f32 xrad, f32 yrad, Map *m
 	if (left < 0)
 		left = 0;
 	if (top < 0)
-		left = 0;
+		top = 0;
 	if (right > map->pitch - 1)
 		right = map->pitch - 1;
 	if (bottom < map->height)
