@@ -1,6 +1,7 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+typedef u16 InputField;
 #define INPUT_LEFT  (1 << 0)
 #define INPUT_UP    (1 << 1)
 #define INPUT_RIGHT (1 << 2)
@@ -13,7 +14,7 @@
 #define INPUT_Z     (1 << 9)
 #define INPUT_NOCON (1 << 10)
 
-extern u16 input_down, input_press;
+extern InputField input_down, input_press;
 
 void InitInput();
 void GetInput();

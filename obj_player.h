@@ -18,9 +18,12 @@ typedef struct
 	//Animation state
 	u16 walk_tick;
 	f32 walk_per;
+	
+	//Collision state
+	ObjCollideField collide;
 } ObjPlayer_Work;
 
-BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman);
+BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman, Map *map);
 void ObjPlayer_Render(Object *obj, ObjectManager *objman);
 
 #endif

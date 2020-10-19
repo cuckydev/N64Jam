@@ -26,7 +26,7 @@ Gamemode GM_Game_Update(void *vwk)
 	//Fallthrough
 		case GM_Game_State_Loop:
 			//Update game state
-			ObjectManager_Update(&wk->objman);
+			ObjectManager_Update(&wk->objman, &wk->map);
 			break;
 	}
 	

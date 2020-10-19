@@ -11,22 +11,37 @@ typedef struct
 	f32 ground_accel;
 	f32 ground_decel;
 	f32 ground_drag;
+	
+	f32 jump_speed;
 	f32 run_speed;
+	
+	f32 gravity;
+	f32 hold_gravity;
+	f32 gravity_drag;
 } PlayerParam;
 
 static const PlayerParam standard_param = {
-	0.2f,
-	0.005f,
-	0.9f,
-	1.25f,
+	/* ground_accel */ 0.2f,
+	/* ground_decel */ 0.005f,
+	/* ground_drag */ 0.9f,
+	
+	/* jump_speed */ 4.75f,
+	/* run_speed */ 1.25f,
+	
+	/* gravity */ 0.2f,
+	/* hold_gravity */ 0.1f,
+	/* gravity_drag */ 0.975f,
 };
 
 //Object update
-BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman)
+BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman, Map *map)
 {
 	//Get object node information
 	ObjPlayer_Work *wk = (ObjPlayer_Work*)obj->work;
 	ObjectState *state = &obj->state;
+	
+	//Get physics parameters to use
+	const PlayerParam *param = &standard_param;
 	
 	//Update player state
 	switch (wk->state)
@@ -47,7 +62,6 @@ BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman)
 	if (input_down & INPUT_DOWN)
 		state->sx -= 0.025f;
 	state->sy = state->sx;
-	//state->y = 136.0f - 16.0f * state->sy;
 	
 	//Run player state
 	switch (wk->state)
@@ -60,6 +74,9 @@ BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman)
 			//Animation state
 			wk->walk_tick = 0x0000;
 			wk->walk_per = 0.0f;
+			
+			//Collision state
+			wk->collide = 0;
 		}
 	//Fallthrough
 		case ObjPlayerState_Idle:
@@ -70,14 +87,14 @@ BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman)
 				wk->walk_tick = 0x0000;
 			
 			//Decelerate
-			state->xsp *= standard_param.ground_drag;
-			state->xsp = max(abs(state->xsp) - standard_param.ground_decel, 0) * sign(state->xsp);
+			state->xsp *= param->ground_drag;
+			state->xsp = max(abs(state->xsp) - param->ground_decel, 0) * sign(state->xsp);
 			break;
 		}
 		case ObjPlayerState_Walk:
 		{
 			//Increase animation weight
-			f32 tgt_per = min(abs(state->xsp) / standard_param.run_speed, 1.0f);
+			f32 tgt_per = min(abs(state->xsp) / param->run_speed, 1.0f);
 			if (wk->walk_per < tgt_per)
 				wk->walk_per = min(wk->walk_per + 0.125f, tgt_per);
 			else if (wk->walk_per > tgt_per)
@@ -90,30 +107,48 @@ BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman)
 				state->x_flip = FALSE;
 			
 			//Accelerate
-			state->xsp *= standard_param.ground_drag;
-			state->xsp += standard_param.ground_accel * (state->x_flip ? -1.0f : 1.0f);
+			state->xsp *= param->ground_drag;
+			state->xsp += param->ground_accel * (state->x_flip ? -1.0f : 1.0f);
 			break;
 		}
 	}
 	
-	//Increment animation tick
-	state->x += state->xsp;
+	//Gravity and jumping
+	if (wk->collide & OBJ_COLLIDE_FLOOR)
+	{
+		//Jump if A is pressed
+		if (input_press & INPUT_A)
+			state->ysp = -param->jump_speed;
+	}
+	else
+	{
+		//Enforce gravity
+		state->ysp *= param->gravity_drag;
+		if ((input_down & INPUT_A) && state->ysp < 0.0f)
+			state->ysp += param->hold_gravity;
+		else
+			state->ysp += param->gravity;
+	}
 	
-	if ((input_down & INPUT_A) && state->ysp < 0.0f)
-		state->ysp -= 0.05f;
-	state->ysp += 0.1f;
+	//Move
+	state->x += state->xsp;
 	state->y += state->ysp;
 	
-	f32 fy = 136.0f - (16.0f * state->sy);
-	if (state->y >= fy)
-	{
-		if (input_press & INPUT_A)
-			state->ysp = -2.0f;
-		else
-			state->ysp = 0.0f;
-		state->y = fy;
-		wk->walk_tick += (abs(state->xsp) / standard_param.run_speed) * 0x800;
-	}
+	//Animation
+	wk->walk_tick += (abs(state->xsp) / param->run_speed) * 0x800;
+	
+	//Collision detection
+	wk->collide = ObjectManager_CollideMap(obj, 8.0f * state->sx, 16.0f * state->sy, map);
+	
+	//Stop speeds if hit collision
+	if ((wk->collide & OBJ_COLLIDE_LEFT) && state->xsp < 0.0f)
+		state->xsp = 0.0f;
+	if ((wk->collide & OBJ_COLLIDE_CEILING) && state->ysp < 0.0f)
+		state->ysp = 0.0f;
+	if ((wk->collide & OBJ_COLLIDE_RIGHT) && state->xsp > 0.0f)
+		state->xsp = 0.0f;
+	if ((wk->collide & OBJ_COLLIDE_FLOOR) && state->ysp > 0.0f)
+		state->ysp = 0.0f;
 	
 	return FALSE;
 }

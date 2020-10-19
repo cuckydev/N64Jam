@@ -2,6 +2,14 @@
 #define OBJECT_H
 
 #include "game_def.h"
+#include "map.h"
+
+//Object constants
+typedef u8 ObjCollideField;
+#define OBJ_COLLIDE_LEFT    (1 << 0)
+#define OBJ_COLLIDE_CEILING (1 << 1)
+#define OBJ_COLLIDE_RIGHT   (1 << 2)
+#define OBJ_COLLIDE_FLOOR   (1 << 3)
 
 //Object types
 typedef enum
@@ -26,7 +34,7 @@ typedef struct
 	BOOL x_flip, y_flip;
 } ObjectState;
 
-typedef BOOL (*Object_Update)(struct Object*, ObjectManager*);
+typedef BOOL (*Object_Update)(struct Object*, ObjectManager*, Map*);
 typedef void (*Object_Render)(struct Object*, ObjectManager*);
 
 typedef struct Object
@@ -43,10 +51,13 @@ typedef struct Object
 	struct Object *prev, *next;
 } Object;
 
-//Object interface
+//Common object functions
+ObjCollideField ObjectManager_CollideMap(Object *obj, f32 xrad, f32 yrad, Map *map);
+
+//Object manager interface
 void ObjectManager_Init(ObjectManager *objman);
 void ObjectManager_Quit(ObjectManager *objman);
-void ObjectManager_Update(ObjectManager *objman);
+void ObjectManager_Update(ObjectManager *objman, Map *map);
 void ObjectManager_Render(ObjectManager *objman);
 
 void ObjectManager_Insert(ObjectManager *objman, ObjectId id, const ObjectState *state);

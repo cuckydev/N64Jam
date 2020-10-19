@@ -6,7 +6,7 @@ static NUContData cont_data[NU_CONT_MAXCONTROLLERS];
 static u8 cont_pattern;
 
 //Input state
-u16 input_down, input_press;
+InputField input_down, input_press;
 
 //Input interface
 void InitInput()
@@ -28,7 +28,7 @@ void GetInput()
 	if (cont_pattern & 1)
 	{
 		//Get next key state
-		u16 next_input = 0;
+		InputField next_input = 0;
 		
 		//D-Pad
 		if (cont_data[0].button & L_JPAD)
