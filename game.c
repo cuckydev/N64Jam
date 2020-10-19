@@ -32,7 +32,7 @@ static void *gamemode_work;
 static Gamemode_Update gamemode_update;
 static Gamemode_Render gamemode_render;
 
-void SetGamemode(Gamemode next_gamemode)
+static void SetGamemode(Gamemode next_gamemode)
 {
 	//Make sure gamemode changed
 	if (gamemode == next_gamemode)

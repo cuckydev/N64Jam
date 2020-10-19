@@ -1,9 +1,9 @@
+#include <ultra64.h>
+
 #include "obj_player.h"
 #include "render.h"
 #include "math_util.h"
 #include "input.h"
-
-#include "assets/player.inc.c"
 
 //Player physics parameters
 typedef struct
@@ -22,10 +22,11 @@ static const PlayerParam standard_param = {
 };
 
 //Object update
-BOOL ObjPlayer_Update(void *vwk, ObjectState *state)
+BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman)
 {
-	//Cast void work to object work structure
-	ObjPlayer_Work *wk = (ObjPlayer_Work*)vwk;
+	//Get object node information
+	ObjPlayer_Work *wk = (ObjPlayer_Work*)obj->work;
+	ObjectState *state = &obj->state;
 	
 	//Update player state
 	switch (wk->state)
@@ -46,7 +47,7 @@ BOOL ObjPlayer_Update(void *vwk, ObjectState *state)
 	if (input_down & INPUT_DOWN)
 		state->sx -= 0.025f;
 	state->sy = state->sx;
-	state->y = 136.0f - 16.0f * state->sy;
+	//state->y = 136.0f - 16.0f * state->sy;
 	
 	//Run player state
 	switch (wk->state)
@@ -96,9 +97,21 @@ BOOL ObjPlayer_Update(void *vwk, ObjectState *state)
 	}
 	
 	//Increment animation tick
-	if (!(input_down & INPUT_A))
+	state->x += state->xsp;
+	
+	if ((input_down & INPUT_A) && state->ysp < 0.0f)
+		state->ysp -= 0.05f;
+	state->ysp += 0.1f;
+	state->y += state->ysp;
+	
+	f32 fy = 136.0f - (16.0f * state->sy);
+	if (state->y >= fy)
 	{
-		state->x += state->xsp;
+		if (input_press & INPUT_A)
+			state->ysp = -2.0f;
+		else
+			state->ysp = 0.0f;
+		state->y = fy;
 		wk->walk_tick += (abs(state->xsp) / standard_param.run_speed) * 0x800;
 	}
 	
@@ -106,6 +119,8 @@ BOOL ObjPlayer_Update(void *vwk, ObjectState *state)
 }
 
 //Object draw
+#include "assets/player.inc.c"
+
 static void Player_DrawPart(s32 bx, s32 by, f32 sx, f32 sy, BOOL x_flip, BOOL y_flip, f32 x, f32 y, u8 px, u8 py)
 {
 	//Get render state
@@ -134,10 +149,11 @@ static void Player_DrawPart(s32 bx, s32 by, f32 sx, f32 sy, BOOL x_flip, BOOL y_
 	RenderTex(&src, &dst);
 }
 
-void ObjPlayer_Render(void *vwk, ObjectState *state)
+void ObjPlayer_Render(Object *obj, ObjectManager *objman)
 {
-	//Cast void work to object work structure
-	ObjPlayer_Work *wk = (ObjPlayer_Work*)vwk;
+	//Get object node information
+	ObjPlayer_Work *wk = (ObjPlayer_Work*)obj->work;
+	ObjectState *state = &obj->state;
 	
 	//Get animation state
 	u8 walk_ang = wk->walk_tick >> 8;

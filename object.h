@@ -10,6 +10,14 @@ typedef enum
 	ObjectId_Num,
 } ObjectId;
 
+struct Object;
+
+typedef struct
+{
+	//Head object node
+	struct Object *head;
+} ObjectManager;
+
 typedef struct
 {
 	f32 x, y; //position
@@ -18,10 +26,10 @@ typedef struct
 	BOOL x_flip, y_flip;
 } ObjectState;
 
-typedef BOOL (*Object_Update)(void*, ObjectState*);
-typedef void (*Object_Render)(void*, ObjectState*);
+typedef BOOL (*Object_Update)(struct Object*, ObjectManager*);
+typedef void (*Object_Render)(struct Object*, ObjectManager*);
 
-typedef struct ObjectNode
+typedef struct Object
 {
 	//Object work and state
 	ObjectState state;
@@ -32,20 +40,14 @@ typedef struct ObjectNode
 	Object_Render render;
 	
 	//Linked list
-	struct ObjectNode *prev, *next;
-} ObjectNode;
-
-typedef struct
-{
-	//Head object node
-	ObjectNode *head;
-} ObjectManager;
+	struct Object *prev, *next;
+} Object;
 
 //Object interface
 void ObjectManager_Init(ObjectManager *objman);
 void ObjectManager_Quit(ObjectManager *objman);
 void ObjectManager_Update(ObjectManager *objman);
-void ObjectManager_Draw(ObjectManager *objman);
+void ObjectManager_Render(ObjectManager *objman);
 
 void ObjectManager_Insert(ObjectManager *objman, ObjectId id, const ObjectState *state);
 

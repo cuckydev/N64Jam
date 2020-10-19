@@ -1,5 +1,3 @@
-#include <ultra64.h>
-
 #include "player/body_00.inc.c"
 #include "player/limbs.inc.c"
 

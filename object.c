@@ -32,9 +32,9 @@ void ObjectManager_Quit(ObjectManager *objman)
 	//Release all object nodes contained by object manager
 	if (objman->head != NULL)
 	{
-		for (ObjectNode *node = objman->head; node != NULL;)
+		for (Object *node = objman->head; node != NULL;)
 		{
-			ObjectNode *next = node->next;
+			Object *next = node->next;
 			
 			//Free node contents and node
 			if (node->work != NULL)
@@ -50,14 +50,14 @@ void ObjectManager_Quit(ObjectManager *objman)
 void ObjectManager_Update(ObjectManager *objman)
 {
 	//Update all object nodes
-	for (ObjectNode *node = objman->head; node != NULL;)
+	for (Object *node = objman->head; node != NULL;)
 	{
-		ObjectNode *next = node->next;
+		Object *next = node->next;
 		
 		//Update object node
 		if (node->update != NULL)
 		{
-			if (node->update(node->work, &node->state))
+			if (node->update(node, objman))
 			{
 				//Unlink and release object node
 				if (node->work != NULL)
@@ -76,14 +76,14 @@ void ObjectManager_Update(ObjectManager *objman)
 	}
 }
 
-void ObjectManager_Draw(ObjectManager *objman)
+void ObjectManager_Render(ObjectManager *objman)
 {
 	//Render all object nodes
-	for (ObjectNode *node = objman->head; node != NULL; node = node->next)
+	for (Object *node = objman->head; node != NULL; node = node->next)
 	{
 		//Update object node
 		if (node->render != NULL)
-			node->render(node->work, &node->state);
+			node->render(node, objman);
 	}
 }
 
@@ -92,7 +92,7 @@ void ObjectManager_Insert(ObjectManager *objman, ObjectId id, const ObjectState 
 	//Create new object node using object id's definition
 	const Object_Def *def = &object_def[id];
 	
-	ObjectNode *node = (ObjectNode*)Mem_Alloc(sizeof(ObjectNode));
+	Object *node = (Object*)Mem_Alloc(sizeof(Object));
 	if (def->work_size != 0)
 		node->work = Mem_Alloc(def->work_size);
 	else

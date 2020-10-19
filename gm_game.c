@@ -16,7 +16,10 @@ Gamemode GM_Game_Update(void *vwk)
 			wk->state = GM_Game_State_Loop;
 			
 			//Initialize game state
+			Map_Init(&wk->map);
 			ObjectManager_Init(&wk->objman);
+			
+			Map_Load(&wk->map, MapId_Test);
 			
 			static const ObjectState player_state = {160.0f, 120.0f, 0.0f, 0.0f, 1.0f, 1.0f};
 			ObjectManager_Insert(&wk->objman, ObjectId_Player, &player_state);
@@ -32,6 +35,7 @@ Gamemode GM_Game_Update(void *vwk)
 	{
 		//Deinitialize gamemode
 		ObjectManager_Quit(&wk->objman);
+		Map_Quit(&wk->map);
 	}
 	return next_gm;
 }
@@ -42,9 +46,8 @@ void GM_Game_Render(void *vwk)
 	GM_Game_Work *wk = (GM_Game_Work*)vwk;
 	
 	//Render game
-	RenderRect(&grect_full, RGB(0x00, 0x80, 0x80));
-	Rect rect_floor = {0, 136, SCREEN_WIDTH, SCREEN_HEIGHT};
-	RenderRect(&rect_floor, RGB(0x00, 0x00, 0x00));
+	RenderRect(&grect_full, RGB(0x59, 0x83, 0xCC));
 	
-	ObjectManager_Draw(&wk->objman);
+	ObjectManager_Render(&wk->objman);
+	Map_Render(&wk->map);
 }

@@ -3,6 +3,7 @@
 
 #include "game.h"
 #include "object.h"
+#include "map.h"
 
 //Gamemode declaration
 typedef enum
@@ -17,8 +18,8 @@ typedef struct
 	GM_Game_State state;
 	
 	//Game state
+	Map map;
 	ObjectManager objman;
-	u8 r, g, b;
 } GM_Game_Work;
 
 Gamemode GM_Game_Update(void *vwk);

@@ -28,6 +28,7 @@ CODEFILES = \
 	render.c \
 	input.c \
 	game.c \
+	map.c \
 	object.c \
 	obj_player.c \
 	gm_game.c

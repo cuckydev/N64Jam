@@ -20,7 +20,7 @@ typedef struct
 	f32 walk_per;
 } ObjPlayer_Work;
 
-BOOL ObjPlayer_Update(void *vwk, ObjectState *state);
-void ObjPlayer_Render(void *vwk, ObjectState *state);
+BOOL ObjPlayer_Update(Object *obj, ObjectManager *objman);
+void ObjPlayer_Render(Object *obj, ObjectManager *objman);
 
 #endif
